@@ -12,8 +12,8 @@ interface HeaderProps {
 export function Header({ selectedModel, onSelectModel, apiStatus }: HeaderProps) {
   const variants = [
     { id: 'tiny', label: 'Tiny', params: '563K', desc: 'Edge profile (~4 ms)' },
-    { id: 'base', label: 'Base', params: '3.28M', desc: '97.84% Acc, 81.0% mIoU' },
-    { id: 'large', label: 'Large', params: '13.94M', desc: 'Max precision (Default)' },
+    { id: 'base', label: 'Base', params: '3.28M', desc: '97.84% Acc, 81.0% mIoU (Default)' },
+    { id: 'large', label: 'Large', params: '13.94M', desc: 'Deep model profile' },
   ];
 
   return (
@@ -29,9 +29,6 @@ export function Header({ selectedModel, onSelectModel, apiStatus }: HeaderProps)
               <h1 className="text-xl font-bold tracking-tight text-white font-sans">
                 Patch-MFFT <span className="text-indigo-400 font-medium text-sm">Forensics</span>
               </h1>
-              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                IEEE TIFS 2026
-              </span>
             </div>
             <p className="text-xs text-gray-400 hidden sm:block">
               Dual-Branch Radial Frequency Transformer for Localized Inpainting & Splicing

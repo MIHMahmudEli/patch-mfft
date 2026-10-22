@@ -159,7 +159,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800/80 bg-gray-950/60 py-6 mt-12 text-xs text-gray-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Patch-MFFT Research Team. IEEE Transactions on Information Forensics and Security.</p>
+          <p>© 2026 Patch-MFFT Research Team. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a
               href="https://huggingface.co/spaces/MohsinElis/patch-mfft-api"
