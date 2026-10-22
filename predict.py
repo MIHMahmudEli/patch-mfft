@@ -29,7 +29,6 @@ def parse_args():
     parser.add_argument("--model", "-m", type=str, default="base", choices=["tiny", "base", "large"], help="Patch-MFFT model variant")
     parser.add_argument("--weights", "-w", type=str, default=None, help="Custom path to model weights .pt file (optional)")
     parser.add_argument("--output", "-o", type=str, default="output_heatmap.png", help="Path to save output heatmap overlay")
-    parser.add_argument("--threshold", "-t", type=float, default=0.5, help="Classification decision threshold (default: 0.5)")
     parser.add_argument("--device", "-d", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Inference device")
     return parser.parse_args()
 
@@ -41,17 +40,22 @@ def get_device(requested: str) -> torch.device:
 
 
 def load_model(variant: str, weights_path: Path, device: torch.device):
-    model = build_patch_mfft(variant=variant, num_classes=2)
+    model = build_patch_mfft(variant=variant, img_size=384, num_classes=3)
     if weights_path.exists():
-        state = torch.load(weights_path, map_location="cpu", weights_only=True)
-        if "model_state" in state:
-            state = state["model_state"]
-        elif "state_dict" in state:
+        try:
+            state = torch.load(weights_path, map_location="cpu", weights_only=True)
+        except Exception:
+            state = torch.load(weights_path, map_location="cpu", weights_only=False)
+
+        if isinstance(state, dict) and "model_state_dict" in state:
+            state = state["model_state_dict"]
+        elif isinstance(state, dict) and "state_dict" in state:
             state = state["state_dict"]
+
         # Strip potential _orig_mod prefix from compile
         cleaned_state = {k.replace("_orig_mod.", ""): v for k, v in state.items()}
         model.load_state_dict(cleaned_state, strict=True)
-        print(f"[Model] Successfully loaded weights from: {weights_path}")
+        print(f"[Model] Successfully loaded weights with strict=True from: {weights_path}")
     else:
         print(f"[Warning] Weights file not found at {weights_path}. Please run:")
         print(f"          python scripts/download_checkpoints.py {variant}")
@@ -65,7 +69,7 @@ def load_model(variant: str, weights_path: Path, device: torch.device):
 def main():
     args = parse_args()
     device = get_device(args.device)
-    print(f"=== Patch-MFFT Forensic Inference Engine ===")
+    print("=== Patch-MFFT Forensic Inference Engine ===")
     print(f"Device:           {device}")
     print(f"Model Variant:    patch_mfft_{args.model}")
 
@@ -82,12 +86,12 @@ def main():
 
     model = load_model(args.model, weights_path, device)
 
-    # Load and preprocess image
+    # Load and preprocess image matching training pipeline
     orig_img = Image.open(img_path).convert("RGB")
     orig_w, orig_h = orig_img.size
 
     transform = T.Compose([
-        T.Resize((384, 384)),
+        T.Resize((384, 384), interpolation=T.InterpolationMode.BILINEAR),
         T.ToTensor(),
         T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -95,21 +99,37 @@ def main():
 
     # Inference
     with torch.no_grad():
-        cls_logits, seg_logits = model(tensor)
+        cls_logits, seg_logits = model(tensor, return_mask=True)
         probs = F.softmax(cls_logits, dim=-1).squeeze(0)
-        tampered_prob = probs[1].item()
-        authentic_prob = probs[0].item()
+        pred_idx = torch.argmax(probs).item()
 
-        # Dense mask
-        mask_prob = torch.sigmoid(seg_logits).squeeze().cpu().numpy()
+        # Dense tampering mask
+        raw_mask = torch.sigmoid(seg_logits).squeeze().cpu().numpy()
 
-    is_tampered = tampered_prob >= args.threshold
-    label_str = "TAMPERED / FORGERY DETECTED" if is_tampered else "AUTHENTIC IMAGE"
+    classes = [
+        ("AUTHENTIC CAMERA CAPTURE", "No manipulation detected. Pristine optical sensor noise."),
+        ("HOLISTIC GENERATIVE AI", "End-to-end synthetic image synthesized by diffusion / GAN generator."),
+        ("SPLICED / INPAINTED TAMPERING", "Localized digital tampering detected. Boundary phase incoherence.")
+    ]
+
+    verdict_label, verdict_desc = classes[pred_idx]
+    confidence = probs[pred_idx].item() * 100.0
 
     print("\n--- Forensic Analysis Results ---")
-    print(f"Decision:         {label_str}")
-    print(f"Authentic Prob:   {authentic_prob * 100:.2f}%")
-    print(f"Tampered Prob:    {tampered_prob * 100:.2f}%")
+    print(f"Decision:         {verdict_label}")
+    print(f"Confidence:       {confidence:.2f}%")
+    print(f"Authentic Prob:   {probs[0].item() * 100:.2f}%")
+    print(f"Full AI Prob:     {probs[1].item() * 100:.2f}%")
+    print(f"Spliced Prob:     {probs[2].item() * 100:.2f}%")
+
+    # Forensic mask gating
+    if pred_idx == 0:
+        mask_prob = np.zeros_like(raw_mask)
+    elif pred_idx == 1:
+        mask_prob = np.clip(raw_mask, 0.0, 1.0)
+    else:
+        mask_prob = np.where(raw_mask > 0.20, raw_mask, 0.0)
+
     print(f"Peak Mask Value:  {mask_prob.max() * 100:.2f}%")
 
     # Generate Heatmap Overlay
@@ -117,7 +137,7 @@ def main():
     heatmap_img = Image.fromarray((heatmap_colored * 255).astype(np.uint8)).resize((orig_w, orig_h), Image.Resampling.BILINEAR)
 
     # Blend original and heatmap
-    overlay = Image.blend(orig_img, heatmap_img, alpha=0.45)
+    overlay = Image.blend(orig_img, heatmap_img, alpha=0.45 if pred_idx != 0 else 0.0)
     out_path = Path(args.output)
     overlay.save(out_path)
     print(f"\nSaved localization heatmap overlay to: {out_path.resolve()}")

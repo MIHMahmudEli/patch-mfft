@@ -51,9 +51,9 @@ class TamperingModelServer:
             state = torch.load(path, map_location=self.device, weights_only=False)
 
         raw_state = state["model_state_dict"] if isinstance(state, dict) and "model_state_dict" in state else state
-        self.model.load_state_dict(raw_state, strict=False)
+        self.model.load_state_dict(raw_state, strict=True)
         self.is_loaded = True
-        print(f"[TamperingModelServer] Successfully loaded weights from {path}")
+        print(f"[TamperingModelServer] Successfully loaded weights with strict=True from {path}")
 
     def warmup(self, iters: int = 2):
         dummy = torch.randn(1, 3, self.img_size, self.img_size).to(self.device)
@@ -63,18 +63,11 @@ class TamperingModelServer:
         print(f"[TamperingModelServer] Warmup completed ({iters} iterations).")
 
     def _preprocess(self, image: Image.Image) -> torch.Tensor:
-        w, h = image.size
-        target = self.img_size + 16
-        if w < h:
-            new_w, new_h = target, max(target, int(h * target / w))
-        else:
-            new_h, new_w = target, max(target, int(w * target / h))
-        image = image.convert("RGB").resize((new_w, new_h), Image.Resampling.BILINEAR)
-        left = max(0, (new_w - self.img_size) // 2)
-        top = max(0, (new_h - self.img_size) // 2)
-        image = image.crop((left, top, left + self.img_size, top + self.img_size))
+        # Standardize directly to model input resolution via bilinear resampling,
+        # perfectly matching the training dataset pipeline (Cell 14 of kaggle_patch_mfft_pipeline)
+        img_res = image.convert("RGB").resize((self.img_size, self.img_size), Image.Resampling.BILINEAR)
 
-        img_array = np.array(image, dtype=np.float32) / 255.0
+        img_array = np.array(img_res, dtype=np.float32) / 255.0
         mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
         std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
         img_array = ((img_array - mean) / std).astype(np.float32)
@@ -102,6 +95,18 @@ class TamperingModelServer:
 
         # Mask to Base64 PNG (apply sigmoid to convert raw logits to probabilities)
         mask_np = torch.sigmoid(mask)[0, 0].cpu().numpy()
+
+        # Forensic mask gating:
+        # 1. Authentic Camera: Zero out tampering mask (untouched camera capture)
+        # 2. Full AI: Retain full frame generative anomaly heatmap
+        # 3. Spliced/Tampered: Suppress background noise (< 0.20) to sharply isolate forged regions
+        if pred_idx == 0:
+            mask_np = np.zeros_like(mask_np)
+        elif pred_idx == 1:
+            mask_np = np.clip(mask_np, 0.0, 1.0)
+        else:
+            mask_np = np.where(mask_np > 0.20, mask_np, 0.0)
+
         mask_uint8 = np.clip(mask_np * 255.0, 0, 255).astype(np.uint8)
         mask_pil = Image.fromarray(mask_uint8, mode="L")
         buf = io.BytesIO()
