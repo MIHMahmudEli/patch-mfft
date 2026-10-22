@@ -9,7 +9,7 @@ import { PredictionResult } from '../lib/utils';
 import { ShieldCheck, AlertTriangle, Cpu, Layers, Sparkles, BookOpen } from 'lucide-react';
 
 export default function Home() {
-  const [selectedModel, setSelectedModel] = useState<string>('large');
+  const [selectedModel, setSelectedModel] = useState<string>('base');
   const [apiStatus, setApiStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);

@@ -17,7 +17,10 @@ import torch.nn.functional as F
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "model" / "src"))
-from model import PatchMFFT, build_patch_mfft
+try:
+    from model.src.model import PatchMFFT, build_patch_mfft
+except ImportError:
+    from model import PatchMFFT, build_patch_mfft
 
 
 TURBO_LUT = np.array([
@@ -111,43 +114,13 @@ class TamperingModelServer:
         tensor = torch.from_numpy(img_array).permute(2, 0, 1).unsqueeze(0)
         return tensor.to(self.device)
 
-    def _preprocess_native_crop(self, image: Image.Image) -> torch.Tensor:
-        # Extracts native 384x384 central patch without downsampling,
-        # preserving pristine camera PRNU sensor noise and Bayer demosaicing statistics
-        w, h = image.size
-        left = max(0, (w - self.img_size) // 2)
-        top = max(0, (h - self.img_size) // 2)
-        crop = image.convert("RGB").crop((left, top, left + self.img_size, top + self.img_size))
-
-        img_array = np.array(crop, dtype=np.float32) / 255.0
-        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
-        img_array = ((img_array - mean) / std).astype(np.float32)
-
-        tensor = torch.from_numpy(img_array).permute(2, 0, 1).unsqueeze(0)
-        return tensor.to(self.device)
-
     @torch.no_grad()
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         start = time.time()
-        w, h = image.size
         tensor = self._preprocess(image)
 
         logits, mask = self.model(tensor, return_mask=True)
         probs = F.softmax(logits, dim=-1)[0]
-
-        # Multi-scale forensic fusion for high-resolution images (> 600x600):
-        # Downscaling a 12MP/4K camera photo 10x destroys optical sensor noise.
-        # Inspecting a native 384x384 crop preserves genuine camera sensor statistics.
-        if (w > 600 or h > 600) and (w >= self.img_size and h >= self.img_size):
-            tensor_crop = self._preprocess_native_crop(image)
-            logits_crop = self.model(tensor_crop)
-            probs_crop = F.softmax(logits_crop, dim=-1)[0]
-            # If native crop confirms authentic sensor noise (prob > 0.50):
-            if probs_crop[0] > 0.50:
-                probs = 0.35 * probs + 0.65 * probs_crop
-            elif probs[0] > 0.50 and probs_crop[0] > 0.30:
-                probs = 0.50 * probs + 0.50 * probs_crop
 
         pred_idx = torch.argmax(probs).item()
         classes = ["authentic", "full_ai", "spliced_tampered"]
@@ -159,22 +132,12 @@ class TamperingModelServer:
             "spliced_tampered": round(probs[2].item(), 4),
         }
 
-        # Continuous probability modulation for Turbo colormap:
+        # Raw evaluated pixel-level tampering probability from dense convolutional decoder (loc):
+        # Directly evaluated from multi-frequency feature map, without artificial color or class overrides.
         mask_np = torch.sigmoid(mask)[0, 0].cpu().numpy()
 
-        if pred_idx == 0:
-            # Authentic Camera: Smoothly attenuate false-positive noise floor
-            # Yields deep cool blue / indigo baseline (< 0.08) indicating 0% localized tampering
-            mask_np = np.clip(mask_np * (1.0 - probs[0].item()), 0.0, 0.12)
-        elif pred_idx == 1:
-            # Full AI Synthesis: Diffuse full-frame generative anomaly (0.70 to 1.0)
-            mask_np = np.clip(0.70 + 0.30 * mask_np, 0.0, 1.0)
-        else:
-            # Spliced / Localized Tampering: Sharply isolate forged patch, soft background
-            mask_np = np.where(mask_np > 0.18, mask_np, mask_np * 0.15)
-
-        # Convert to Turbo false-color RGB heatmap using precomputed LUT
-        # 0.0: Deep Navy/Indigo | 0.25: Sky Blue | 0.50: Lime Green | 0.75: Orange | 1.0: Crimson Red
+        # Convert raw continuous tampering probabilities [0.0, 1.0] to Turbo false-color RGB heatmap
+        # 0.0 (Deep Navy/Indigo): Pristine Authentic | 0.50 (Lime Green): Transition | 1.0 (Crimson Red): High Tampering
         lut_idx = np.clip(mask_np * 255.0, 0, 255).astype(np.int32)
         heatmap_rgb = TURBO_LUT[lut_idx]
         mask_pil = Image.fromarray(heatmap_rgb, mode="RGB")

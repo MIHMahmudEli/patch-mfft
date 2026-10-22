@@ -29,7 +29,7 @@ MODEL_INFO = {
 }
 
 model_registry: Dict[str, TamperingModelServer] = {}
-DEFAULT_VARIANT = os.environ.get("PATCH_MFFT_VARIANT", "large")
+DEFAULT_VARIANT = os.environ.get("PATCH_MFFT_VARIANT", "base")
 IMG_SIZE = int(os.environ.get("PATCH_MFFT_IMG_SIZE", "384"))
 
 
