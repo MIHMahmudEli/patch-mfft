@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Checkpoints (downloaded on demand via scripts/download_checkpoints.py)
+model/checkpoints/*.pt
+model/checkpoints/*.bin
+!model/checkpoints/.gitkeep
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+
+# Web frontend build & dependencies
+web/node_modules/
+web/.next/
+web/out/
+
+# Output visualization artifacts
+output_heatmap.png
+*.png_temp
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
