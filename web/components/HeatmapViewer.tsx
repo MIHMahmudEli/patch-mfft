@@ -73,28 +73,35 @@ export function HeatmapViewer({ originalImage, heatmapBase64, prediction }: Heat
               style={{
                 opacity: opacity,
                 mixBlendMode: 'screen',
-                filter: 'drop-shadow(0 0 10px rgba(239, 68, 68, 0.8)) hue-rotate(-20deg) saturate(200%)',
               }}
               className="absolute inset-0 m-auto max-h-[360px] w-auto object-contain pointer-events-none"
             />
           </div>
 
-          {/* Slider */}
-          <div className="flex items-center gap-3 px-2 pt-1">
-            <Sliders className="w-4 h-4 text-gray-400" />
-            <span className="text-xs text-gray-400 font-medium">Mask Intensity:</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={opacity}
-              onChange={(e) => setOpacity(parseFloat(e.target.value))}
-              className="flex-1 accent-rose-500 h-1.5 bg-gray-800 rounded-lg cursor-pointer"
-            />
-            <span className="text-xs font-mono text-gray-300 w-10 text-right">
-              {Math.round(opacity * 100)}%
-            </span>
+          {/* Slider & Scale Legend */}
+          <div className="space-y-2 px-2 pt-1">
+            <div className="flex items-center gap-3">
+              <Sliders className="w-4 h-4 text-gray-400" />
+              <span className="text-xs text-gray-400 font-medium">Mask Intensity:</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={opacity}
+                onChange={(e) => setOpacity(parseFloat(e.target.value))}
+                className="flex-1 accent-rose-500 h-1.5 bg-gray-800 rounded-lg cursor-pointer"
+              />
+              <span className="text-xs font-mono text-gray-300 w-10 text-right">
+                {Math.round(opacity * 100)}%
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono">
+              <span className="text-blue-400 font-medium">0% Authentic (Deep Blue)</span>
+              <div className="flex-1 mx-2 h-1.5 rounded-full bg-gradient-to-r from-[#30123b] via-[#28bbec] via-[#a4fc3b] via-[#fa7d20] to-[#7a0402] border border-gray-700/50" />
+              <span className="text-rose-400 font-medium">100% Tampered (Hot Red)</span>
+            </div>
           </div>
         </div>
       ) : (
@@ -113,14 +120,23 @@ export function HeatmapViewer({ originalImage, heatmapBase64, prediction }: Heat
           </div>
 
           <div className="space-y-1.5">
-            <span className="text-xs font-medium text-rose-400">Predicted Tampering Probability Mask:</span>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-rose-400">Predicted Tampering Probability Mask:</span>
+              <span className="text-[10px] font-mono text-gray-400">Turbo False-Color Map</span>
+            </div>
             <div className="rounded-xl overflow-hidden border border-rose-900/50 bg-black flex items-center justify-center p-1 min-h-[260px]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={maskDataUrl}
                 alt="Tampering Probability Mask"
-                className="max-h-[260px] w-auto object-contain invert brightness-125 contrast-150"
+                className="max-h-[260px] w-auto object-contain rounded-lg"
               />
+            </div>
+            {/* Color scale gradient bar */}
+            <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono px-1">
+              <span className="text-blue-400 font-medium">0% Authentic</span>
+              <div className="flex-1 mx-2 h-1.5 rounded-full bg-gradient-to-r from-[#30123b] via-[#28bbec] via-[#a4fc3b] via-[#fa7d20] to-[#7a0402] border border-gray-700/50" />
+              <span className="text-rose-400 font-medium">100% Tampered</span>
             </div>
           </div>
         </div>

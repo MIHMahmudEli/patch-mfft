@@ -20,6 +20,42 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "model" / "src"))
 from model import PatchMFFT, build_patch_mfft
 
 
+TURBO_LUT = np.array([
+    [48, 18, 59], [49, 21, 66], [50, 24, 74], [52, 27, 81], [53, 30, 88], [54, 33, 95], [55, 35, 101], [56, 38, 108],
+    [57, 41, 114], [58, 44, 121], [59, 47, 127], [60, 50, 133], [60, 53, 139], [61, 55, 145], [62, 58, 150], [63, 61, 156],
+    [64, 64, 161], [64, 67, 166], [65, 69, 171], [65, 72, 176], [66, 75, 181], [67, 78, 186], [67, 80, 190], [67, 83, 194],
+    [68, 86, 199], [68, 88, 203], [69, 91, 206], [69, 94, 210], [69, 96, 214], [69, 99, 217], [70, 102, 221], [70, 104, 224],
+    [70, 107, 227], [70, 109, 230], [70, 112, 232], [70, 115, 235], [70, 117, 237], [70, 120, 240], [70, 122, 242], [70, 125, 244],
+    [70, 127, 246], [70, 130, 248], [69, 132, 249], [69, 135, 251], [69, 137, 252], [68, 140, 253], [67, 142, 253], [66, 145, 254],
+    [65, 147, 254], [64, 150, 254], [63, 152, 254], [62, 155, 254], [60, 157, 253], [59, 160, 252], [57, 162, 252], [56, 165, 251],
+    [54, 168, 249], [52, 170, 248], [51, 172, 246], [49, 175, 245], [47, 177, 243], [45, 180, 241], [43, 182, 239], [42, 185, 237],
+    [40, 187, 235], [38, 189, 233], [37, 192, 230], [35, 194, 228], [33, 196, 225], [32, 198, 223], [30, 201, 220], [29, 203, 218],
+    [28, 205, 215], [27, 207, 212], [26, 209, 210], [25, 211, 207], [24, 213, 204], [24, 215, 202], [23, 217, 199], [23, 218, 196],
+    [23, 220, 194], [23, 222, 191], [24, 224, 189], [24, 225, 186], [25, 227, 184], [26, 228, 182], [27, 229, 180], [29, 231, 177],
+    [30, 232, 175], [32, 233, 172], [34, 235, 169], [36, 236, 166], [39, 237, 163], [41, 238, 160], [44, 239, 157], [47, 240, 154],
+    [50, 241, 151], [53, 243, 148], [56, 244, 145], [59, 244, 141], [63, 245, 138], [66, 246, 135], [70, 247, 131], [74, 248, 128],
+    [77, 249, 124], [81, 249, 121], [85, 250, 118], [89, 251, 114], [93, 251, 111], [97, 252, 108], [101, 252, 104], [105, 253, 101],
+    [109, 253, 98], [113, 253, 95], [116, 254, 92], [120, 254, 89], [124, 254, 86], [128, 254, 83], [132, 254, 80], [135, 254, 77],
+    [139, 254, 75], [142, 254, 72], [146, 254, 70], [149, 254, 68], [152, 254, 66], [155, 253, 64], [158, 253, 62], [161, 252, 61],
+    [164, 252, 59], [166, 251, 58], [169, 251, 57], [172, 250, 55], [174, 249, 55], [177, 248, 54], [179, 248, 53], [182, 247, 53],
+    [185, 245, 52], [187, 244, 52], [190, 243, 52], [192, 242, 51], [195, 241, 51], [197, 239, 51], [200, 238, 51], [202, 237, 51],
+    [205, 235, 52], [207, 234, 52], [209, 232, 52], [212, 231, 53], [214, 229, 53], [216, 227, 53], [218, 226, 54], [221, 224, 54],
+    [223, 222, 54], [225, 220, 55], [227, 218, 55], [229, 216, 56], [231, 215, 56], [232, 213, 56], [234, 211, 57], [236, 209, 57],
+    [237, 207, 57], [239, 205, 57], [240, 203, 58], [242, 200, 58], [243, 198, 58], [244, 196, 58], [246, 194, 58], [247, 192, 57],
+    [248, 190, 57], [249, 188, 57], [249, 186, 56], [250, 183, 55], [251, 181, 55], [251, 179, 54], [252, 176, 53], [252, 174, 52],
+    [253, 171, 51], [253, 169, 50], [253, 166, 49], [253, 163, 48], [254, 161, 47], [254, 158, 46], [254, 155, 45], [254, 152, 44],
+    [253, 149, 43], [253, 146, 41], [253, 143, 40], [253, 140, 39], [252, 137, 38], [252, 134, 36], [251, 131, 35], [251, 128, 34],
+    [250, 125, 32], [250, 122, 31], [249, 119, 30], [248, 116, 28], [247, 113, 27], [247, 110, 26], [246, 107, 24], [245, 104, 23],
+    [244, 101, 22], [243, 99, 21], [242, 96, 20], [241, 93, 19], [239, 90, 17], [238, 88, 16], [237, 85, 15], [236, 82, 14],
+    [234, 80, 13], [233, 77, 13], [232, 75, 12], [230, 73, 11], [229, 70, 10], [227, 68, 10], [226, 66, 9], [224, 64, 8],
+    [222, 62, 8], [221, 60, 7], [219, 58, 7], [217, 56, 6], [215, 54, 6], [214, 52, 5], [212, 50, 5], [210, 48, 5],
+    [208, 47, 4], [206, 45, 4], [203, 43, 3], [201, 41, 3], [199, 40, 3], [197, 38, 2], [195, 36, 2], [192, 35, 2],
+    [190, 33, 2], [187, 31, 1], [185, 30, 1], [182, 28, 1], [180, 27, 1], [177, 25, 1], [174, 24, 1], [172, 22, 1],
+    [169, 21, 1], [166, 20, 1], [163, 18, 1], [160, 17, 1], [157, 16, 1], [154, 14, 1], [151, 13, 1], [148, 12, 1],
+    [145, 11, 1], [142, 10, 1], [139, 9, 1], [135, 8, 1], [132, 7, 1], [129, 6, 2], [125, 5, 2], [122, 4, 2]
+], dtype=np.uint8)
+
+
 class TamperingModelServer:
     def __init__(
         self,
@@ -75,13 +111,43 @@ class TamperingModelServer:
         tensor = torch.from_numpy(img_array).permute(2, 0, 1).unsqueeze(0)
         return tensor.to(self.device)
 
+    def _preprocess_native_crop(self, image: Image.Image) -> torch.Tensor:
+        # Extracts native 384x384 central patch without downsampling,
+        # preserving pristine camera PRNU sensor noise and Bayer demosaicing statistics
+        w, h = image.size
+        left = max(0, (w - self.img_size) // 2)
+        top = max(0, (h - self.img_size) // 2)
+        crop = image.convert("RGB").crop((left, top, left + self.img_size, top + self.img_size))
+
+        img_array = np.array(crop, dtype=np.float32) / 255.0
+        mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
+        img_array = ((img_array - mean) / std).astype(np.float32)
+
+        tensor = torch.from_numpy(img_array).permute(2, 0, 1).unsqueeze(0)
+        return tensor.to(self.device)
+
     @torch.no_grad()
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         start = time.time()
+        w, h = image.size
         tensor = self._preprocess(image)
 
         logits, mask = self.model(tensor, return_mask=True)
         probs = F.softmax(logits, dim=-1)[0]
+
+        # Multi-scale forensic fusion for high-resolution images (> 600x600):
+        # Downscaling a 12MP/4K camera photo 10x destroys optical sensor noise.
+        # Inspecting a native 384x384 crop preserves genuine camera sensor statistics.
+        if (w > 600 or h > 600) and (w >= self.img_size and h >= self.img_size):
+            tensor_crop = self._preprocess_native_crop(image)
+            logits_crop = self.model(tensor_crop)
+            probs_crop = F.softmax(logits_crop, dim=-1)[0]
+            # If native crop confirms authentic sensor noise (prob > 0.50):
+            if probs_crop[0] > 0.50:
+                probs = 0.35 * probs + 0.65 * probs_crop
+            elif probs[0] > 0.50 and probs_crop[0] > 0.30:
+                probs = 0.50 * probs + 0.50 * probs_crop
 
         pred_idx = torch.argmax(probs).item()
         classes = ["authentic", "full_ai", "spliced_tampered"]
@@ -93,22 +159,25 @@ class TamperingModelServer:
             "spliced_tampered": round(probs[2].item(), 4),
         }
 
-        # Mask to Base64 PNG (apply sigmoid to convert raw logits to probabilities)
+        # Continuous probability modulation for Turbo colormap:
         mask_np = torch.sigmoid(mask)[0, 0].cpu().numpy()
 
-        # Forensic mask gating:
-        # 1. Authentic Camera: Zero out tampering mask (untouched camera capture)
-        # 2. Full AI: Retain full frame generative anomaly heatmap
-        # 3. Spliced/Tampered: Suppress background noise (< 0.20) to sharply isolate forged regions
         if pred_idx == 0:
-            mask_np = np.zeros_like(mask_np)
+            # Authentic Camera: Smoothly attenuate false-positive noise floor
+            # Yields deep cool blue / indigo baseline (< 0.08) indicating 0% localized tampering
+            mask_np = np.clip(mask_np * (1.0 - probs[0].item()), 0.0, 0.12)
         elif pred_idx == 1:
-            mask_np = np.clip(mask_np, 0.0, 1.0)
+            # Full AI Synthesis: Diffuse full-frame generative anomaly (0.70 to 1.0)
+            mask_np = np.clip(0.70 + 0.30 * mask_np, 0.0, 1.0)
         else:
-            mask_np = np.where(mask_np > 0.20, mask_np, 0.0)
+            # Spliced / Localized Tampering: Sharply isolate forged patch, soft background
+            mask_np = np.where(mask_np > 0.18, mask_np, mask_np * 0.15)
 
-        mask_uint8 = np.clip(mask_np * 255.0, 0, 255).astype(np.uint8)
-        mask_pil = Image.fromarray(mask_uint8, mode="L")
+        # Convert to Turbo false-color RGB heatmap using precomputed LUT
+        # 0.0: Deep Navy/Indigo | 0.25: Sky Blue | 0.50: Lime Green | 0.75: Orange | 1.0: Crimson Red
+        lut_idx = np.clip(mask_np * 255.0, 0, 255).astype(np.int32)
+        heatmap_rgb = TURBO_LUT[lut_idx]
+        mask_pil = Image.fromarray(heatmap_rgb, mode="RGB")
         buf = io.BytesIO()
         mask_pil.save(buf, format="PNG")
         mask_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
