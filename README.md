@@ -1,4 +1,4 @@
-# Patch-MFFT: Dual-Branch Radial Frequency Transformer
+# Patch-MFFT: Dual-Branch Frequency-Guided Transformers for Localized Image Tampering and Inpainting Forensics
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen.svg)](https://www.python.org/)
@@ -6,7 +6,7 @@
 [![Hugging Face Space](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Space%20Demo-yellow)](https://huggingface.co/spaces/MohsinElis/patch-mfft-api)
 [![Models](https://img.shields.io/badge/%F0%9F%A4%97%20Checkpoints-Hub-purple)](https://huggingface.co/MohsinElis/patch-mfft-tampering-checkpoints)
 
-Official open-source implementation and evaluation suite for **"Patch-MFFT: Dual-Branch Radial Frequency Transformer for Localized Generative Inpainting, Composite Blackmail Forgery, and Style Tampering Detection"**.
+Official open-source implementation and evaluation suite for **"Patch-MFFT: Dual-Branch Frequency-Guided Transformers for Localized Image Tampering and Inpainting Forensics"**.
 
 ---
 
@@ -154,7 +154,7 @@ If you find Patch-MFFT useful in your research or application, please cite our m
 
 ```bibtex
 @article{eli2026patchmfft,
-  title={Patch-MFFT: Dual-Branch Radial Frequency Transformer for Localized Generative Inpainting, Composite Blackmail Forgery, and Style Tampering Detection},
+  title={Patch-MFFT: Dual-Branch Frequency-Guided Transformers for Localized Image Tampering and Inpainting Forensics},
   author={Eli, Mohsin and Research Team},
   journal={arXiv preprint},
   year={2026}

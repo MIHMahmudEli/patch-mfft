@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Patch-MFFT | Localized Tampering & Inpainting Forensics',
+  title: 'PatchForensics | Unmasking Generative Forgery at the Pixel Level',
   description:
-    'Dual-Branch Radial Frequency Transformer for Localized Generative Inpainting, Composite Blackmail Splicing, and Style Tampering Detection.',
+    'Dual-Branch Frequency-Guided Transformers for Localized Image Tampering and Inpainting Forensics.',
 };
 
 export default function RootLayout({

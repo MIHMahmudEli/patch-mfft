@@ -80,14 +80,14 @@ export default function Home() {
           </div>
 
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
-            Localized Generative Tampering & Inpainting Forensics
+            Unmasking Generative Forgery at the Pixel Level
           </h2>
 
           <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
             Conventional whole-image frequency detectors fail when tampering occupies only 5%–15% of the frame.
-            <strong> Patch-MFFT</strong> combines radial 2D-FFT annular filtering with dual-branch peak anomaly gating
+            <strong> PatchForensics (Patch-MFFT)</strong> combines radial 2D-FFT annular filtering with dual-branch peak anomaly gating
             to concurrently execute <strong>3-way frame classification triage</strong> and produce{' '}
-            <strong>pixel-wise tampering localization heatmaps</strong>.
+            <strong>pixel-wise tampering localization heatmaps</strong> in real time.
           </p>
         </div>
 
@@ -159,7 +159,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="border-t border-gray-800/80 bg-gray-950/60 py-6 mt-12 text-xs text-gray-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Patch-MFFT Research Team. All rights reserved.</p>
+          <p>© 2026 PatchForensics Research Team. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a
               href="https://huggingface.co/spaces/MohsinElis/patch-mfft-api"

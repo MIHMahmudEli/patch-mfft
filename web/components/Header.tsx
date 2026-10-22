@@ -27,7 +27,7 @@ export function Header({ selectedModel, onSelectModel, apiStatus }: HeaderProps)
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight text-white font-sans">
-                Patch-MFFT <span className="text-indigo-400 font-medium text-sm">Forensics</span>
+                PatchForensics <span className="text-indigo-400 font-semibold text-xs tracking-wider uppercase bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full">AI</span>
               </h1>
             </div>
             <p className="text-xs text-gray-400 hidden sm:block">
